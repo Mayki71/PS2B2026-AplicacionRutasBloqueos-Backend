@@ -28,4 +28,9 @@ desactivar(@Body() body: any) {
   return this.adminService.desactivarUsuario(body.id);
 }
 
+@Post('activar')
+activar(@Body() body: any) {
+  return this.adminService.activarUsuario(body.id);
+}
+
 }

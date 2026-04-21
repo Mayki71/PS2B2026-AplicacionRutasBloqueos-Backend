@@ -56,4 +56,17 @@ async desactivarUsuario(id: number) {
   return data;
 }
 
+async activarUsuario(id: number) {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .update({ es_activo: true })
+    .eq('id_usuario', id);
+
+  if (error) return { error };
+
+  return data;
+}
+
+
+
 }
