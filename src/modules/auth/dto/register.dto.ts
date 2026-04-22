@@ -22,6 +22,5 @@ export class RegisterDto {
   apellido_materno: string;
 
   @IsString()
-  @IsNotEmpty()
   telefono: string;
 }
