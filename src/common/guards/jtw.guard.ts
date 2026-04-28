@@ -18,8 +18,18 @@ export class JwtGuard implements CanActivate {
 
     const { data, error } = await supabase.auth.getUser(token);
 
-    if (error || !data.user)
-      throw new UnauthorizedException('Token inválido o expirado');
+    if (error) {
+      if (error.message.includes('expired')) {
+        throw new UnauthorizedException(
+          'Tu sesión expiró, volvé a iniciar sesión',
+        );
+      }
+      throw new UnauthorizedException('Token inválido');
+    }
+
+    if (!data.user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
 
     request.user = data.user;
     return true;
