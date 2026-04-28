@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  NotFoundException,
 } from '@nestjs/common';
 import { supabase } from '../../config/supabase.config';
 import { RegisterDto } from './dto/register.dto';
@@ -75,5 +76,19 @@ export class AuthService {
         es_administrador: perfil?.es_administrador,
       },
     };
+  }
+
+  async getMe(authId: string) {
+    const { data: perfil, error } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('auth_id', authId)
+      .single();
+
+    if (error || !perfil) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    return perfil;
   }
 }
