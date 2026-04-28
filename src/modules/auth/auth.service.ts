@@ -7,6 +7,7 @@ import {
 import { supabase } from '../../config/supabase.config';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -91,4 +92,22 @@ export class AuthService {
 
     return perfil;
   }
+
+  async updateMe(authId: string, dto: UpdateProfileDto) {
+    const { data: perfil, error } = await supabase
+      .from('usuarios')
+      .update({
+        ...(dto.nombre && { nombre: dto.nombre }),
+        ...(dto.apellido_paterno && { apellido_paterno: dto.apellido_paterno }),
+        ...(dto.apellido_materno && { apellido_materno: dto.apellido_materno }),
+        ...(dto.telefono && { telefono: dto.telefono }),
+      })
+      .eq('auth_id', authId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return perfil;
+  } 
 }
