@@ -90,9 +90,13 @@ export class AuthService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    return perfil;
-  }
+    const { data: authData } = await supabase.auth.admin.getUserById(authId);
 
+    return {
+      ...perfil,
+      email: authData?.user?.email ?? '',
+    };
+  }
   async updateMe(authId: string, dto: UpdateProfileDto) {
     const { data: perfil, error } = await supabase
       .from('usuarios')
@@ -109,5 +113,5 @@ export class AuthService {
     if (error) throw new Error(error.message);
 
     return perfil;
-  } 
+  }
 }
