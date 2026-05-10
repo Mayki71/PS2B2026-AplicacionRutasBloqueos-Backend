@@ -3,18 +3,28 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { supabase } from '../../config/supabase.config';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { MailService } from './mail/mail.service';
+
+
+const SITE_URL = process.env.SITE_URL ?? 'http://localhost:5173';
 
 @Injectable()
 export class AuthService {
+  constructor(private mailService: MailService) {}
+
   async register(dto: RegisterDto) {
     const { data, error } = await supabase.auth.signUp({
       email: dto.email,
       password: dto.password,
+      options: {
+        emailRedirectTo: `${SITE_URL}/verificado`,
+      },
     });
 
     if (error) throw new ConflictException(error.message);
@@ -34,16 +44,37 @@ export class AuthService {
       console.error('Error al insertar perfil:', profileError);
       throw new Error(profileError.message);
     }
+    const { data: linkData, error: linkError } =
+      await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email: dto.email,
+        password: dto.password,
+        options: {
+          redirectTo: `${SITE_URL}/verificado`,
+        },
+      });
 
+    if (!linkError && linkData?.properties?.action_link) {
+      await this.mailService.sendVerificationEmail(
+        dto.email,
+        linkData.properties.action_link,
+      );
+    }
+
+    // return {
+    //   token: data.session?.access_token,
+    //   usuario: {
+    //     auth_id: data.user.id,
+    //     email: data.user.email,
+    //     nombre: dto.nombre,
+    //     apellido_paterno: dto.apellido_paterno,
+    //     apellido_materno: dto.apellido_materno,
+    //   },
+    // };
     return {
-      token: data.session?.access_token,
-      usuario: {
-        auth_id: data.user.id,
-        email: data.user.email,
-        nombre: dto.nombre,
-        apellido_paterno: dto.apellido_paterno,
-        apellido_materno: dto.apellido_materno,
-      },
+      mensaje: 'Cuenta creada. Revisá tu correo para verificar tu cuenta.',
+      email: dto.email,
+      verificado: false,
     };
   }
 
@@ -53,8 +84,12 @@ export class AuthService {
       password: dto.password,
     });
 
-    if (error)
+    if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        throw new UnauthorizedException('EMAIL_NOT_VERIFIED');
+      }
       throw new UnauthorizedException('Email o contraseña incorrectos');
+    }
 
     const { data: perfil } = await supabase
       .from('usuarios')
@@ -77,6 +112,38 @@ export class AuthService {
         es_administrador: perfil?.es_administrador,
       },
     };
+  }
+
+  async resendVerification(dto: ResendVerificationDto) {
+    // Verificar que el usuario existe
+    const { data: users } = await supabase.auth.admin.listUsers();
+    const user = users?.users?.find((u) => u.email === dto.email);
+
+    if (!user)
+      throw new NotFoundException('No existe una cuenta con ese email');
+    if (user.email_confirmed_at) {
+      throw new BadRequestException('Este email ya está verificado');
+    }
+
+    // Generar nuevo link de verificación
+    const { data: linkData, error } = await supabase.auth.admin.generateLink({
+      type: 'signup',
+      email: dto.email,
+      password: crypto.randomUUID(),
+      options: {
+        redirectTo: `${SITE_URL}/verificado`,
+      },
+    });
+
+    if (error) throw new Error(error.message);
+
+    // Mandar email con Resend
+    await this.mailService.sendResendVerificationEmail(
+      dto.email,
+      linkData.properties.action_link,
+    );
+
+    return { mensaje: 'Email de verificación reenviado correctamente' };
   }
 
   async getMe(authId: string) {
