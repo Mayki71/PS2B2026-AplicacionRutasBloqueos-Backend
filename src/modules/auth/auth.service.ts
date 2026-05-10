@@ -10,7 +10,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { MailService } from './mail/mail.service';
-
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 const SITE_URL = process.env.SITE_URL ?? 'http://localhost:5173';
 
@@ -27,7 +27,13 @@ export class AuthService {
       },
     });
 
-    if (error) throw new ConflictException(error.message);
+    if (error) {
+      // Supabase devuelve este mensaje cuando el email ya existe
+      if (error.message.includes('User already registered')) {
+        throw new ConflictException('Este correo ya está registrado');
+      }
+      throw new ConflictException(error.message);
+    }
     if (!data.user) throw new ConflictException('No se pudo crear el usuario');
 
     const { error: profileError } = await supabase.from('usuarios').insert({
@@ -46,21 +52,48 @@ export class AuthService {
     }
     const { data: linkData, error: linkError } =
       await supabase.auth.admin.generateLink({
-        type: 'signup',
+        type: 'magiclink',
         email: dto.email,
-        password: dto.password,
         options: {
           redirectTo: `${SITE_URL}/verificado`,
         },
       });
+    console.log('linkError:', linkError);
+    console.log('linkData:', linkData?.properties?.action_link);
 
     if (!linkError && linkData?.properties?.action_link) {
-      await this.mailService.sendVerificationEmail(
-        dto.email,
-        linkData.properties.action_link,
-      );
+      // En producción mandamos el email
+      // En dev devolvemos el link directamente
+      if (process.env.NODE_ENV === 'production') {
+        await this.mailService.sendVerificationEmail(
+          dto.email,
+          linkData.properties.action_link,
+        );
+      }
     }
 
+    return {
+      mensaje: 'Cuenta creada. Revisá tu correo para verificar tu cuenta.',
+      email: dto.email,
+      verificado: false,
+      // Solo en dev — en prod esto no aparece
+      ...(process.env.NODE_ENV !== 'production' && {
+        dev_verification_link: linkData?.properties?.action_link,
+      }),
+    };
+
+    // if (!linkError && linkData?.properties?.action_link) {
+    //   await this.mailService.sendVerificationEmail(
+    //     dto.email,
+    //     linkData.properties.action_link,
+    //   );
+    // }
+
+    // return {
+    //   mensaje: 'Cuenta creada. Revisá tu correo para verificar tu cuenta.',
+    //   email: dto.email,
+    //   verificado: false,
+    // };
     // return {
     //   token: data.session?.access_token,
     //   usuario: {
@@ -71,11 +104,6 @@ export class AuthService {
     //     apellido_materno: dto.apellido_materno,
     //   },
     // };
-    return {
-      mensaje: 'Cuenta creada. Revisá tu correo para verificar tu cuenta.',
-      email: dto.email,
-      verificado: false,
-    };
   }
 
   async login(dto: LoginDto) {
@@ -117,7 +145,7 @@ export class AuthService {
   async resendVerification(dto: ResendVerificationDto) {
     // Verificar que el usuario existe
     const { data: users } = await supabase.auth.admin.listUsers();
-    const user = users?.users?.find((u) => u.email === dto.email);
+    const user = users?.users?.find((u: any) => u.email === dto.email);
 
     if (!user)
       throw new NotFoundException('No existe una cuenta con ese email');
