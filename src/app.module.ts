@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { supabase } from './config/supabase.config';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
+import { MailModule } from './modules/auth/mail/mail.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
       isGlobal: true,
     }),
     AuthModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
