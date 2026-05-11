@@ -19,6 +19,14 @@ export class AuthService {
   constructor(private mailService: MailService) {}
 
   async register(dto: RegisterDto) {
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const emailExists = existingUsers?.users?.some(
+      (u: any) => u.email === dto.email,
+    );
+    if (emailExists) {
+      throw new ConflictException('Este correo ya está registrado');
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: dto.email,
       password: dto.password,

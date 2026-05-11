@@ -40,7 +40,7 @@ export class MailService {
         </p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
         <p style="color: #94a3b8; font-size: 12px;">
-          AlterVía · La Paz, Bolivia · UMSA 2026
+          Pazly · La Paz, Bolivia · Univalle 2026
         </p>
       </div>
     `;
@@ -49,12 +49,12 @@ export class MailService {
   async sendVerificationEmail(email: string, verificationLink: string) {
     try {
       await this.transporter.sendMail({
-        from: `"AlterVía" <${process.env.GMAIL_USER}>`,
+        from: `"Pazly" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'Verificá tu cuenta en AlterVía',
+        subject: 'Verifica tu cuenta en Pazly',
         html: this.getEmailTemplate(
-          'Bienvenido a <span style="color: #FCA311;">AlterVía</span>',
-          'Gracias por registrarte. Solo falta un paso — verificá tu correo electrónico para activar tu cuenta.',
+          'Bienvenido a <span style="color: #FCA311;">Pazly</span>',
+          'Gracias por registrarte. Solo falta un paso — verifica tu correo electrónico para activar tu cuenta.',
           verificationLink,
           'Verificar mi cuenta',
         ),
@@ -71,11 +71,11 @@ export class MailService {
   async sendResendVerificationEmail(email: string, verificationLink: string) {
     try {
       await this.transporter.sendMail({
-        from: `"AlterVía" <${process.env.GMAIL_USER}>`,
+        from: `"Pazly" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'Reenvío — Verificá tu cuenta en AlterVía',
+        subject: 'Reenvío — Verifica tu cuenta en Pazly',
         html: this.getEmailTemplate(
-          'Verificá tu cuenta en <span style="color: #FCA311;">AlterVía</span>',
+          'Verifica tu cuenta en <span style="color: #FCA311;">Pazly</span>',
           'Recibimos tu solicitud para reenviar el email de verificación.',
           verificationLink,
           'Verificar mi cuenta',
