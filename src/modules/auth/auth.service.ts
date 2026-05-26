@@ -140,7 +140,15 @@ export class AuthService {
     const { data: authData } = await supabase.auth.admin.getUserById(authId);
 
     return {
-      ...perfil,
+      id: perfil.id_usuario,
+      auth_id: perfil.auth_id,
+      nombre: perfil.nombre,
+      apellido_paterno: perfil.apellido_paterno,
+      apellido_materno: perfil.apellido_materno,
+      telefono: perfil.telefono,
+      es_activo: perfil.es_activo,
+      es_administrador: perfil.es_administrador,
+      fecha_registro: perfil.fecha_registro,
       email: authData?.user?.email ?? '',
     };
   }
@@ -159,6 +167,16 @@ export class AuthService {
 
     if (error) throw new Error(error.message);
 
-    return perfil;
+    return {
+      id: perfil.id_usuario,
+      auth_id: perfil.auth_id,
+      nombre: perfil.nombre,
+      apellido_paterno: perfil.apellido_paterno,
+      apellido_materno: perfil.apellido_materno,
+      telefono: perfil.telefono,
+      es_activo: perfil.es_activo,
+      es_administrador: perfil.es_administrador,
+      fecha_registro: perfil.fecha_registro,
+    };
   }
 }
